@@ -53,7 +53,7 @@ class Point:
         self.dfs=None
         self.dfe=None
 
-blocks=[[Point() for i in range(20)] for i in range(20)]
+blocks=[[Point() for i in range(numbox)] for i in range(numbox)]
 start=None
 end=None
 blocked=set()
@@ -74,7 +74,7 @@ while not done:
             done=True
     mo=p.mouse.get_pressed()
     mot0,mot1=p.mouse.get_pos()
-    if mousef!=None and mo[0]==1 and mot1<=600:
+    if mousef!=None and mo[0]==1 and mot1<side:
         pos=((mot0//eachlen)*eachlen,(mot1//eachlen)*eachlen)
         if start==pos or end==pos or pos in blocked:
             pass
