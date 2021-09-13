@@ -89,7 +89,7 @@ def checkn(k):
                 path.add((node.coor))
                 node=node.parent
                 ctr2+=1
-                if ctr2==10:
+                if ctr2==int(renderspeed*0.7):
                     ctr2=0
                     allrender()
             mousef=None
@@ -101,7 +101,7 @@ def checkn(k):
                 neighbour.add((xn*eachlen,yn*eachlen))
 
 side=600
-numbox=100
+numbox=200
 eachlen=side//numbox
 
 p.init()
@@ -116,15 +116,18 @@ doneblock=set()
 neighbour=set()
 path=set()
 
-img=cv2.imread("tosolve.png",0)
+img=cv2.imread("amogustosolve.png",0)
 img=cv2.resize(img,(numbox,numbox))
 
+# cv2.imshow("test",img)
+# cv2.waitKey()
+# cv2.destroyAllWindows()
 
 img = (img/255.).astype(numpy.float32)
 
 for i in range(numbox):
     for j in range(numbox):
-        if img[i][j]<0.9:
+        if img[i][j]<0.5:
             blocked.add((j*eachlen,i*eachlen))
 
 
@@ -149,12 +152,13 @@ def allrender():
     
     for i in blocked:
         p.draw.rect(screen,(15,15,15),[(i[0],i[1]),(eachlen,eachlen)])
-    draw_grid()
+    # draw_grid()
     for b in Bs:
         b.check(mot0,mot1,mo[0])
         b.draw_button()
     p.display.update()
 
+renderspeed=50
 mousef=None
 done=False
 Bs=[Button(10,610,"start point",(75,194,197),(52,132,152)),Button(120,610,"end point",(75,194,20),(52,132,30)),
@@ -194,7 +198,7 @@ while not done:
             neighbour.remove(min)
             checkn(min)
     countertorefresh+=1
-    if countertorefresh==20:
+    if countertorefresh==renderspeed:
         countertorefresh=0
         allrender()
 p.quit()
