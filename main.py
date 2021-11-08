@@ -79,7 +79,10 @@ def checkn(k):
     doneblock.add((i * eachlen, j * eachlen))
     node = blocks[i][j]
     nodev = (i * eachlen, j * eachlen)
-    allpos = [(0, 1), (1, 1), (-1, 1), (0, -1), (1, -1), (-1, -1), (-1, 0), (1, 0)]
+    allpos = [
+        (0, 1), (0, -1), (-1, 0), (1, 0),
+        # (1, 1), (-1, 1), (1, -1), (-1, -1)
+        ]
     for x, y in allpos:
         xn, yn = i + x, j + y
         if (xn * eachlen, yn * eachlen) in blocked or (
@@ -120,7 +123,7 @@ def checkn(k):
 
 
 side = 600
-numbox = 200
+numbox = 100
 renderspeed = 10
 countertorefresh = 0
 gridlinewidth = 0
@@ -154,8 +157,8 @@ if len(sys.argv) > 1:
 
     cv2.imshow("image preview", cv2.resize(img, (500, 500)))
     cv2.namedWindow("image settings", cv2.WINDOW_NORMAL)
-    cv2.createTrackbar("size", "image settings", 100, 200, on_trackbar)
-    cv2.createTrackbar("threshold", "image settings", 0, 1000, on_trackbar2)
+    cv2.createTrackbar("size", "image settings", numbox, 200, on_trackbar)
+    cv2.createTrackbar("threshold", "image settings", thresholdvalue, 1000, on_trackbar2)
 
     cv2.waitKey()
     cv2.destroyAllWindows()
@@ -165,7 +168,7 @@ if len(sys.argv) > 1:
         for j in range(numbox):
             if img[i][j] == 0:
                 blocked.add((j * eachlen, i * eachlen))
-    
+
     renderspeed = 50
     blocks = [[Point(j, i) for i in range(numbox)] for j in range(numbox)]
 else:
@@ -173,7 +176,6 @@ else:
     eachlen = side // numbox
     gridlinewidth = 1
     blocks = [[Point(j, i) for i in range(numbox)] for j in range(numbox)]
-
 
 
 p.init()
@@ -241,7 +243,11 @@ while not done:
             end = pos
         elif mousef == "block":
             blocked.add(pos)
-
+    elif mousef != None and mo[2] == 1 and mot1 < side and mousef != "find path":
+        pos = ((mot0 // eachlen) * eachlen, (mot1 // eachlen) * eachlen)
+        if mousef == "block" and pos in blocked:
+            blocked.remove(pos)
+    
     if mousef == "find path":
         min = None
         for i in neighbour:
