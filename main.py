@@ -119,17 +119,12 @@ def checkn(k):
                 neighbour.add((xn * eachlen, yn * eachlen))
 
 
-print(sys.argv)
 side = 600
 numbox = 200
-eachlen = side // numbox
 renderspeed = 10
 countertorefresh = 0
-gridlinewidth = 1
-thresholdvalue = 0.5
-
-
-blocks = [[Point(j, i) for i in range(numbox)] for j in range(numbox)]
+gridlinewidth = 0
+thresholdvalue = 100
 start = None
 end = None
 blocked = set()
@@ -140,32 +135,46 @@ path = set()
 if len(sys.argv) > 1:
     main = cv2.imread(sys.argv[1], 0)
     img = cv2.resize(main, (numbox, numbox))
-
-    cv2.imshow("test", img)
+    img[img > thresholdvalue] = 255
+    img[img <= thresholdvalue] = 0
 
     def on_trackbar(val):
         numbox = val
         img = cv2.resize(main, (numbox, numbox))
-        cv2.imshow("test", img)
+        img[img > thresholdvalue] = 255
+        img[img <= thresholdvalue] = 0
+        cv2.imshow("image preview", cv2.resize(img, (500, 500)))
 
     def on_trackbar2(val):
-        print(val)
+        thresholdvalue = val * 255 / 1000
+        img = cv2.resize(main, (numbox, numbox))
+        img[img > thresholdvalue] = 255
+        img[img <= thresholdvalue] = 0
+        cv2.imshow("image preview", cv2.resize(img, (500, 500)))
 
-    cv2.createTrackbar("size", "test", 0, 200, on_trackbar)
-
-    cv2.createTrackbar("threshold", "test", 0, 100, on_trackbar2)
+    cv2.imshow("image preview", cv2.resize(img, (500, 500)))
+    cv2.namedWindow("image settings", cv2.WINDOW_NORMAL)
+    cv2.createTrackbar("size", "image settings", 100, 200, on_trackbar)
+    cv2.createTrackbar("threshold", "image settings", 0, 1000, on_trackbar2)
 
     cv2.waitKey()
     cv2.destroyAllWindows()
 
-    # img = (img/255.).astype(numpy.float32)
-
-    # for i in range(numbox):
-    #     for j in range(numbox):
-    #         if img[i][j]<thresholdvalue:
-    #             blocked.add((j*eachlen,i*eachlen))
+    eachlen = side // numbox
+    for i in range(numbox):
+        for j in range(numbox):
+            if img[i][j] == 0:
+                blocked.add((j * eachlen, i * eachlen))
+    
+    renderspeed = 50
+    blocks = [[Point(j, i) for i in range(numbox)] for j in range(numbox)]
 else:
     numbox = 100
+    eachlen = side // numbox
+    gridlinewidth = 1
+    blocks = [[Point(j, i) for i in range(numbox)] for j in range(numbox)]
+
+
 
 p.init()
 screen = p.display.set_mode((side, side + 60))
