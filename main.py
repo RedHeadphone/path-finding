@@ -1,6 +1,5 @@
 import pygame as p
-
-import cv2, numpy, sys
+import cv2, sys
 
 
 class Button:
@@ -13,8 +12,8 @@ class Button:
         self.color2 = c2
         self.lastclick = 0
 
-    def check(self, x1, y1, click):
-        global start, end, mousef, blocked, doneblock, neighbour, path
+    def checkclick(self, x1, y1, click):
+        global start, end, mousef, blocked, doneblock, neighbour, path, foundpath, stopshowingneighbour
         if self.x < x1 < self.x + 100 and self.y < y1 < self.y + 40:
             self.bool = False
             if click == 0 and self.lastclick == 1:
@@ -26,12 +25,14 @@ class Button:
                     neighbour = set()
                     path = set()
                     mousef = None
+                    foundpath = False
+                    stopshowingneighbour = False
                 elif self.st == "find path":
                     if start != None and end != None:
-                        node = blocks[start[0] // eachlen][start[1] // eachlen]
+                        node = blocks[start[0]][start[1]]
                         node.dfs = 0
                         node.dfe = distancecalc(start, end)
-                        checkn(start)
+                        checkneighbour(start)
                         mousef = self.st
                     else:
                         mousef = None
@@ -65,68 +66,65 @@ class Point:
         self.parent = None
         self.dfs = None
         self.dfe = None
-        self.coor = (i * eachlen, j * eachlen)
+        self.coor = (i, j)
 
     def dis(self):
         return self.dfs + self.dfe
 
 
-def checkn(k):
+def checkneighbour(k):
     i, j = k
-    i = i // eachlen
-    j = j // eachlen
-    global start, end, blocked, doneblock, neighbour, mousef, path
-    doneblock.add((i * eachlen, j * eachlen))
+    global start, end, blocked, doneblock, neighbour, mousef, path, cangodiagonally, foundpath
+    doneblock.add((i, j))
     node = blocks[i][j]
-    nodev = (i * eachlen, j * eachlen)
+    nodev = (i, j)
     allpos = [
-        (0, 1), (0, -1), (-1, 0), (1, 0),
-        # (1, 1), (-1, 1), (1, -1), (-1, -1)
-        ]
+        (0, 1),
+        (0, -1),
+        (-1, 0),
+        (1, 0),
+    ]
+    if cangodiagonally:
+        allpos.extend([(1, 1), (-1, 1), (1, -1), (-1, -1)])
     for x, y in allpos:
         xn, yn = i + x, j + y
-        if (xn * eachlen, yn * eachlen) in blocked or (
-            xn * eachlen,
-            yn * eachlen,
+        if (xn, yn) in blocked or (
+            xn,
+            yn,
         ) in doneblock:
             continue
-        elif (xn * eachlen, yn * eachlen) in neighbour:
-            if (
-                node.dfs + distancecalc((xn * eachlen, yn * eachlen), nodev)
-                < blocks[xn][yn].dfs
-            ):
+        elif (xn, yn) in neighbour:
+            if node.dfs + distancecalc((xn, yn), nodev) < blocks[xn][yn].dfs:
                 blocks[xn][yn].parent = node
-                blocks[xn][yn].dfs = node.dfs + distancecalc(
-                    (xn * eachlen, yn * eachlen), nodev
-                )
-        elif (xn * eachlen, yn * eachlen) == end:
+                blocks[xn][yn].dfs = node.dfs + distancecalc((xn, yn), nodev)
+        elif (xn, yn) == end:
             path.add(end)
             ctr2 = 0
-            while node != blocks[start[0] // eachlen][start[1] // eachlen]:
+            foundpath = True
+            while node != blocks[start[0]][start[1]]:
                 path.add((node.coor))
                 node = node.parent
                 ctr2 += 1
-                if ctr2 == int(renderspeed * 0.7):
+                if ctr2 == int(skipframes * 0.7):
                     ctr2 = 0
                     allrender()
             mousef = None
         else:
             if 0 <= xn < numbox and 0 <= yn < numbox:
                 blocks[xn][yn].parent = node
-                blocks[xn][yn].dfs = node.dfs + distancecalc(
-                    (xn * eachlen, yn * eachlen), nodev
-                )
-                blocks[xn][yn].dfe = distancecalc(
-                    (xn * eachlen, yn * eachlen), (end[0], end[1])
-                )
-                neighbour.add((xn * eachlen, yn * eachlen))
+                blocks[xn][yn].dfs = node.dfs + distancecalc((xn, yn), nodev)
+                blocks[xn][yn].dfe = distancecalc((xn, yn), (end[0], end[1]))
+                neighbour.add((xn, yn))
 
 
 side = 600
 numbox = 100
-renderspeed = 10
+cangodiagonally = True
+foundpath = False
+stopshowingneighbour = False
+skipframes = 5
 countertorefresh = 0
-gridlinewidth = 0
+gridlinewidth = 1
 thresholdvalue = 100
 start = None
 end = None
@@ -141,40 +139,51 @@ if len(sys.argv) > 1:
     img[img > thresholdvalue] = 255
     img[img <= thresholdvalue] = 0
 
-    def on_trackbar(val):
-        numbox = val
+    def renderimage():
+        global img, main, numbox, thresholdvalue
         img = cv2.resize(main, (numbox, numbox))
         img[img > thresholdvalue] = 255
         img[img <= thresholdvalue] = 0
         cv2.imshow("image preview", cv2.resize(img, (500, 500)))
 
+    def on_trackbar(val):
+        global numbox
+        if val == 0:
+            return
+        numbox = val
+        renderimage()
+
     def on_trackbar2(val):
-        thresholdvalue = val * 255 / 1000
-        img = cv2.resize(main, (numbox, numbox))
-        img[img > thresholdvalue] = 255
-        img[img <= thresholdvalue] = 0
-        cv2.imshow("image preview", cv2.resize(img, (500, 500)))
+        global thresholdvalue
+        thresholdvalue = (val * 255) // 1000
+        renderimage()
 
     cv2.imshow("image preview", cv2.resize(img, (500, 500)))
     cv2.namedWindow("image settings", cv2.WINDOW_NORMAL)
     cv2.createTrackbar("size", "image settings", numbox, 200, on_trackbar)
-    cv2.createTrackbar("threshold", "image settings", thresholdvalue, 1000, on_trackbar2)
+    cv2.createTrackbar(
+        "threshold",
+        "image settings",
+        (thresholdvalue * 1000) // 255,
+        1000,
+        on_trackbar2,
+    )
 
     cv2.waitKey()
     cv2.destroyAllWindows()
 
-    eachlen = side // numbox
+    eachlen = side / numbox  # fix this its major issue
+    gridlinewidth = 0
     for i in range(numbox):
         for j in range(numbox):
             if img[i][j] == 0:
-                blocked.add((j * eachlen, i * eachlen))
+                blocked.add((j, i))
 
-    renderspeed = 50
+    skipframes = 50
     blocks = [[Point(j, i) for i in range(numbox)] for j in range(numbox)]
 else:
     numbox = 100
     eachlen = side // numbox
-    gridlinewidth = 1
     blocks = [[Point(j, i) for i in range(numbox)] for j in range(numbox)]
 
 
@@ -194,25 +203,48 @@ def draw_grid():
         )
 
 
-def allrender():
+def allrender(skip=False):
     screen.fill((255, 255, 255))
-    for i in neighbour:
-        p.draw.rect(screen, (100, 200, 100), [(i[0], i[1]), (eachlen, eachlen)])
-    for i in doneblock:
-        p.draw.rect(screen, (200, 50, 50), [(i[0], i[1]), (eachlen, eachlen)])
+    if not skip:
+        for i in neighbour:
+            p.draw.rect(
+                screen,
+                (100, 200, 100),
+                [(i[0] * eachlen, i[1] * eachlen), (eachlen, eachlen)],
+            )
+        for i in doneblock:
+            p.draw.rect(
+                screen,
+                (200, 50, 50),
+                [(i[0] * eachlen, i[1] * eachlen), (eachlen, eachlen)],
+            )
     if end != None:
-        p.draw.rect(screen, (25, 200, 15), [(end[0], end[1]), (eachlen, eachlen)])
+        p.draw.rect(
+            screen,
+            (25, 200, 15),
+            [(end[0] * eachlen, end[1] * eachlen), (eachlen, eachlen)],
+        )
     for i in path:
-        p.draw.rect(screen, (25, 25, 200), [(i[0], i[1]), (eachlen, eachlen)])
+        p.draw.rect(
+            screen,
+            (25, 25, 200),
+            [(i[0] * eachlen, i[1] * eachlen), (eachlen, eachlen)],
+        )
     if start != None:
-        p.draw.rect(screen, (25, 25, 200), [(start[0], start[1]), (eachlen, eachlen)])
+        p.draw.rect(
+            screen,
+            (25, 25, 200),
+            [(start[0] * eachlen, start[1] * eachlen), (eachlen, eachlen)],
+        )
 
     for i in blocked:
-        p.draw.rect(screen, (15, 15, 15), [(i[0], i[1]), (eachlen, eachlen)])
+        p.draw.rect(
+            screen, (15, 15, 15), [(i[0] * eachlen, i[1] * eachlen), (eachlen, eachlen)]
+        )
     if gridlinewidth > 0:
         draw_grid()
     for b in Bs:
-        b.check(mot0, mot1, mo[0])
+        b.checkclick(mot0, mot1, mo[0])
         b.draw_button()
     p.display.update()
 
@@ -233,8 +265,14 @@ while not done:
             done = True
     mo = p.mouse.get_pressed()
     mot0, mot1 = p.mouse.get_pos()
-    if mousef != None and mo[0] == 1 and mot1 < side and mousef != "find path":
-        pos = ((mot0 // eachlen) * eachlen, (mot1 // eachlen) * eachlen)
+    pos = ( int(mot0 // eachlen), int(mot1 // eachlen))
+    if (
+        mousef != None
+        and mo[0] == 1
+        and mot1 < side
+        and mousef != "find path"
+        and not foundpath
+    ):
         if start == pos or end == pos or pos in blocked:
             pass
         elif mousef == "start point":
@@ -243,38 +281,36 @@ while not done:
             end = pos
         elif mousef == "block":
             blocked.add(pos)
-    elif mousef != None and mo[2] == 1 and mot1 < side and mousef != "find path":
-        pos = ((mot0 // eachlen) * eachlen, (mot1 // eachlen) * eachlen)
+    elif (
+        mousef != None
+        and mo[2] == 1
+        and mot1 < side
+        and mousef != "find path"
+        and not foundpath
+    ):
         if mousef == "block" and pos in blocked:
             blocked.remove(pos)
-    
-    if mousef == "find path":
+    if foundpath and mo[0] == 1 and mot1 < side:
+        stopshowingneighbour = True
+
+    if mousef == "find path" and not foundpath:
         min = None
         for i in neighbour:
             if min == None:
                 min = i
                 continue
-            if (
-                blocks[min[0] // eachlen][min[1] // eachlen].dis()
-                > blocks[i[0] // eachlen][i[1] // eachlen].dis()
-            ):
+            if blocks[min[0]][min[1]].dis() > blocks[i[0]][i[1]].dis():
                 min = i
-            if (
-                blocks[min[0] // eachlen][min[1] // eachlen].dis()
-                == blocks[i[0] // eachlen][i[1] // eachlen].dis()
-            ):
-                if (
-                    blocks[min[0] // eachlen][min[1] // eachlen].dfe
-                    > blocks[i[0] // eachlen][i[1] // eachlen].dfe
-                ):
+            if blocks[min[0]][min[1]].dis() == blocks[i[0]][i[1]].dis():
+                if blocks[min[0]][min[1]].dfe > blocks[i[0]][i[1]].dfe:
                     min = i
         if len(neighbour) == 0:
             mousef = None
         else:
             neighbour.remove(min)
-            checkn(min)
+            checkneighbour(min)
     countertorefresh += 1
-    if countertorefresh == renderspeed:
+    if countertorefresh == skipframes:
         countertorefresh = 0
-        allrender()
+        allrender(stopshowingneighbour)
 p.quit()
