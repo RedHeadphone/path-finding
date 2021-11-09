@@ -172,7 +172,7 @@ if len(sys.argv) > 1:
     cv2.waitKey()
     cv2.destroyAllWindows()
 
-    eachlen = side / numbox  # fix this its major issue
+    eachlen = side / numbox
     gridlinewidth = 0
     for i in range(numbox):
         for j in range(numbox):
