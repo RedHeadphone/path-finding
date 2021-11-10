@@ -4,8 +4,14 @@ import cv2, sys
 
 class Button:
     def __init__(self, x, y, st, c1, c2):
-        self.x = x
-        self.y = y
+        global side
+        mulfac = side/600
+        self.x = x*mulfac
+        self.y = side + 60 - y
+        self.cx = self.x + 50*mulfac
+        self.cy =  self.y + 20
+        self.width = 100*mulfac
+        self.height = 40
         self.bool = True
         self.st = st
         self.color1 = c1
@@ -51,9 +57,11 @@ class Button:
             c1 = self.color2
         font = p.font.Font("freesansbold.ttf", 18)
         text = font.render(self.st, True, c1)
+        txt_w, txt_h = text.get_size()
+        text = p.transform.smoothscale(text, (txt_w * self.width // 100, txt_h * self.height // 40))
         textRect = text.get_rect()
-        textRect.center = (self.x + 50, self.y + 20)
-        p.draw.rect(screen, c2, [(self.x, self.y), (100, 40)])
+        textRect.center = (self.cx,self.cy)
+        p.draw.rect(screen, c2, [( self.x ,self.y), (self.width, self.height)])
         screen.blit(text, textRect)
 
 
@@ -172,7 +180,9 @@ if len(sys.argv) > 1:
     cv2.waitKey()
     cv2.destroyAllWindows()
 
-    eachlen = side / numbox
+    eachlen = side // numbox
+    side = eachlen * numbox
+    
     gridlinewidth = 0
     for i in range(numbox):
         for j in range(numbox):
@@ -252,11 +262,11 @@ def allrender(skip=False):
 mousef = None
 done = False
 Bs = [
-    Button(10, 610, "start point", (75, 194, 197), (52, 132, 152)),
-    Button(120, 610, "end point", (75, 194, 20), (52, 132, 30)),
-    Button(230, 610, "block", (200, 132, 132), (200, 75, 75)),
-    Button(340, 610, "reset", (132, 132, 132), (99, 75, 75)),
-    Button(490, 610, "find path", (200, 200, 30), (200, 100, 30)),
+    Button(10, 50, "start point", (75, 194, 197), (52, 132, 152)),
+    Button(120, 50, "end point", (75, 194, 20), (52, 132, 30)),
+    Button(230, 50, "block", (200, 132, 132), (200, 75, 75)),
+    Button(340, 50, "reset", (132, 132, 132), (99, 75, 75)),
+    Button(490, 50, "find path", (200, 200, 30), (200, 100, 30)),
 ]
 
 while not done:
