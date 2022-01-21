@@ -192,7 +192,7 @@ if len(sys.argv) > 1:
     skipframes = 50
     blocks = [[Point(j, i) for i in range(numbox)] for j in range(numbox)]
 else:
-    numbox = 100
+    numbox = 50
     eachlen = side // numbox
     blocks = [[Point(j, i) for i in range(numbox)] for j in range(numbox)]
 
